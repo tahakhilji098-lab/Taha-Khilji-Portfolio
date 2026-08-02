@@ -58,6 +58,16 @@
   }
 }
 
+/* Structural overflow safety — the root chain can never grow wider than
+   the viewport (defensive baseline; real offenders are fixed separately) */
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
 .font-serif {
   font-family: var(--font-serif);
 }
@@ -523,6 +533,19 @@
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+/* Mobile entrance: opacity + vertical rise only — never animates width or
+   horizontal position, so the capsule stays put while it fades in. */
+@keyframes floatingHeaderEntranceMobile {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -1010,10 +1033,27 @@
 @media (max-width: 767px) {
   .floating-header,
   .floating-header[data-compact="true"] {
-    top: 10px;
-    width: calc(100vw - 24px);
+    /* Fixed left/right insets instead of center-translate: immune to any
+       horizontal page overflow or centering-math shifts while scrolling.
+       Height and width are static on mobile (no compact shrink, no width
+       animation). max() keeps the capsule clear of the notch/safe areas
+       in landscape, and no motion library writes width/x/scale here. */
+    top: max(10px, env(safe-area-inset-top, 0px));
+    left: max(12px, env(safe-area-inset-left, 0px));
+    right: max(12px, env(safe-area-inset-right, 0px));
+    width: auto;
+    max-width: none;
+    min-width: 0;
     height: 58px;
-    padding: 7px 8px 7px 17px;
+    margin: 0;
+    box-sizing: border-box;
+    padding: 6px 8px 6px 16px;
+    translate: none;
+    transform: none;
+    animation: floatingHeaderEntranceMobile 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    transition:
+      background-color 260ms ease,
+      box-shadow 280ms ease;
   }
   .header-inner {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -1021,6 +1061,11 @@
   }
   .header-brand {
     font-size: 22px;
+    min-width: 0;
+    max-width: calc(100% - 56px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .header-brand-inner,
   .floating-header[data-compact="true"] .header-brand-inner {
@@ -1034,6 +1079,21 @@
   }
   .header-menu-toggle {
     display: inline-flex;
+    flex: 0 0 44px;
+  }
+
+  /* Mobile menu panel — anchored to the same left/right insets as the
+     capsule, bounded to the viewport, scrollable when space is short */
+  .header-mobile-menu {
+    top: calc(max(10px, env(safe-area-inset-top, 0px)) + 66px);
+    left: max(12px, env(safe-area-inset-left, 0px));
+    right: max(12px, env(safe-area-inset-right, 0px));
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    max-height: calc(100dvh - 92px);
+    overflow-y: auto;
+    translate: none;
   }
 
   /* Links rise and fade with a 45ms stagger once the panel opens */
@@ -1081,6 +1141,11 @@
   .floating-header {
     animation: none;
     opacity: 1;
+    transform: none;
+    transition-duration: 160ms !important;
+  }
+  .header-mobile-menu {
+    animation: none;
     transform: none;
     transition-duration: 160ms !important;
   }
@@ -2049,6 +2114,10 @@
   position: relative;
   isolation: isolate;
   width: 100%;
+  /* Decorative layers (::after at right: -120px, background stage at
+     right: -70px) legitimately bleed past the section — clip them so the
+     page can never scroll horizontally at tablet widths. */
+  overflow-x: clip;
   background: #020817;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
@@ -5471,6 +5540,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
   padding-top: 96px;
   overflow: hidden;
   background-color: var(--contact-bg);
@@ -7036,6 +7106,143 @@ textarea.contact-field {
 
   .services-container {
     padding-top: 36px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Responsive corrections — unified mobile pass
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Fluid media: images, video and svg can never exceed their container */
+img,
+video,
+svg {
+  max-width: 100%;
+}
+
+/* Email addresses and URLs must wrap instead of overflowing on small screens */
+.contact-email-link {
+  overflow-wrap: anywhere;
+}
+
+/* ─── Case study modal: true viewport-level dialog ─── */
+
+.case-study-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: grid;
+  place-items: center;
+  padding: calc(12px + env(safe-area-inset-top, 0px))
+    calc(12px + env(safe-area-inset-right, 0px))
+    calc(12px + env(safe-area-inset-bottom, 0px))
+    calc(12px + env(safe-area-inset-left, 0px));
+  background: rgba(1, 5, 16, 0.76);
+  -webkit-backdrop-filter: blur(14px) saturate(0.8);
+  backdrop-filter: blur(14px) saturate(0.8);
+}
+
+.case-study-window {
+  position: relative;
+  width: min(1320px, calc(100vw - 48px));
+  max-height: calc(100dvh - 56px);
+  border-radius: 24px;
+  overflow: hidden;
+  background: rgba(10, 20, 42, 0.99);
+  border: 1px solid rgba(94, 154, 255, 0.24);
+  box-shadow:
+    0 45px 120px rgba(0, 0, 0, 0.65),
+    0 0 70px rgba(24, 105, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  outline: none;
+}
+
+/* Scroll region lives inside the window so the close button can stay put */
+.case-study-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  max-height: calc(100dvh - 56px);
+  scrollbar-width: thin;
+  scrollbar-color: #1a233d transparent;
+}
+
+/* Close — always visible: rendered above the scroll container, never
+   covered by the header (backdrop z-index sits above it) or by images. */
+.case-study-close {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  z-index: 40;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(94, 154, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(10, 18, 40, 0.72);
+  color: #f2f6ff;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  transition:
+    background 300ms ease,
+    border-color 300ms ease,
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.case-study-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.case-study-close:hover {
+  background: #267dff;
+  border-color: #267dff;
+}
+
+.case-study-close:active {
+  transform: scale(0.94);
+}
+
+.case-study-close:focus-visible {
+  outline: 2px solid rgba(84, 164, 255, 0.95);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .case-study-window {
+    width: min(100%, 720px);
+    max-height: calc(100dvh - 24px);
+    border-radius: 20px;
+  }
+
+  .case-study-scroll {
+    max-height: calc(100dvh - 24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .case-study-window,
+  .case-study-close {
+    transition-duration: 120ms;
+  }
+}
+
+/* ─── Small mobile corrections ─── */
+
+@media (max-width: 767px) {
+  /* Services: the capsule list + visuals define their own height —
+     no dead space from the desktop 580px minimum */
+  .services-composition {
+    min-height: 0;
+  }
+
+  /* About: the résumé button must not force a fixed minimum width
+     that could overflow narrow viewports */
+  .about-resume-button {
+    min-width: 0;
   }
 }
 

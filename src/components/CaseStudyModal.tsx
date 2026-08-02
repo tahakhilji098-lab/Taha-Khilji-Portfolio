@@ -151,17 +151,12 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
 
   return (
     <motion.div
-      className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto py-7 md:py-5"
+      className="case-study-backdrop"
       data-lenis-prevent
-      style={{
-        background: 'rgba(1, 5, 16, 0.76)',
-        backdropFilter: 'blur(14px) saturate(0.8)',
-        WebkitBackdropFilter: 'blur(14px) saturate(0.8)',
-      }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.32, ease }}
+      transition={{ duration: 0.3, ease }}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -171,49 +166,39 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
       <motion.div
         ref={modalRef}
         tabIndex={-1}
-        layout
-        className="relative w-[min(1320px,calc(100vw-64px))] max-h-[calc(100dvh-56px)] rounded-3xl overflow-hidden bg-[#0A142A]/99 border border-[rgba(94,154,255,0.24)] shadow-[0_45px_120px_rgba(0,0,0,0.65),0_0_70px_rgba(24,105,255,0.08)] inset-shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] md:rounded-3xl sm:rounded-xl motion-reduce:transition-none"
+        className="case-study-window"
         onClick={(e) => e.stopPropagation()}
-        initial={{ opacity: 0, scale: 0.97, y: 30 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.97, y: 30 }}
-        transition={{ duration: 0.48, ease, delay: 0.06 }}
+        initial={{ opacity: 0, y: 12, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 12, scale: 0.985 }}
+        transition={{ duration: 0.38, ease, delay: 0.05 }}
       >
+        {/* Close button — always visible above scroll content, outside the
+            scroll container so it never scrolls out of view */}
+        <button
+          type="button"
+          onClick={handleClose}
+          className="case-study-close"
+          aria-label="Close project details"
+        >
+          <X aria-hidden="true" />
+        </button>
+
         {/* Scrollable Content */}
-        <div className="overflow-y-auto max-h-[calc(100dvh-56px)]" data-lenis-prevent style={{ scrollbarWidth: 'thin', scrollbarColor: '#1A233D transparent' }}>
+        <div className="case-study-scroll" data-lenis-prevent>
           {/* ─── Hero Image ─── */}
           <div className="relative w-full h-[clamp(320px,48vh,600px)] overflow-hidden">
-            <motion.div
-              layoutId={project.id}
-              className="absolute inset-0"
-              transition={{ duration: 0.6, ease }}
-            >
+            <div className="absolute inset-0">
               <img
                 src={project.thumbnail}
                 alt={project.title}
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
-            </motion.div>
+            </div>
 
             {/* Bottom gradient blend */}
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0A142A] pointer-events-none" />
-
-            {/* Close button top-left with gradient protection */}
-            <div className="absolute top-0 left-0 z-30 p-4 md:p-5">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#050A18]/70 via-[#050A18]/30 to-transparent pointer-events-none rounded-br-3xl" />
-              <button
-                onClick={handleClose}
-                className="group relative z-10 w-[44px] h-[44px] md:w-[46px] md:h-[46px] rounded-full bg-[#0A1228]/70 backdrop-blur-md border border-[rgba(94,154,255,0.2)] flex items-center justify-center
-                  hover:bg-[#267DFF] hover:border-[#267DFF] hover:scale-[1.06] hover:shadow-[0_0_20px_rgba(38,125,255,0.3)]
-                  active:scale-[0.94]
-                  transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#267DFF]"
-                aria-label="Close project details"
-              >
-                <X className="w-[18px] h-[18px] md:w-[20px] md:h-[20px] text-[#9EA8BD] group-hover:text-white group-hover:rotate-90 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]" />
-              </button>
-            </div>
           </div>
 
           {/* ─── Content Area ─── */}

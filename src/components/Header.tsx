@@ -27,7 +27,19 @@ export const Header: React.FC<HeaderProps> = ({ activeSection }) => {
   const reduce = useReducedMotion();
 
   useEffect(() => {
+    const desktopMq = window.matchMedia('(min-width: 768px)');
+
     const handleScroll = () => {
+      /* Compact shrink is desktop-only — below 768px the capsule must stay
+         a fixed-size bar so its width/height never animate while scrolling. */
+      if (!desktopMq.matches) {
+        if (compactRef.current) {
+          compactRef.current = false;
+          setIsCompact(false);
+        }
+        return;
+      }
+
       const y = window.scrollY;
 
       if (y >= COMPACT_AFTER && !compactRef.current) {

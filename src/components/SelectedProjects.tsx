@@ -191,8 +191,6 @@ interface ProjectCardProps {
   hasActiveProject: boolean;
 }
 
-const EASE = [0.22, 1, 0.36, 1] as const;
-
 const ProjectCard: React.FC<ProjectCardProps> = ({
   project,
   categoryLabel,
@@ -240,11 +238,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         {isActive ? (
           <div className="absolute inset-0 bg-[#050A18]" />
         ) : (
-          <motion.div
-            layoutId={project.id}
-            className="absolute inset-0"
-            transition={{ duration: 0.6, ease: EASE }}
-          >
+          <div className="absolute inset-0">
             <motion.div
               className="absolute inset-x-0 -inset-y-[14px]"
               {...drift}
@@ -258,7 +252,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
               />
             </motion.div>
             <div className="absolute inset-0 bg-gradient-to-t from-[#0A1228] via-transparent to-transparent opacity-50 group-hover:opacity-30 transition-opacity duration-300" />
-          </motion.div>
+          </div>
         )}
       </div>
 
