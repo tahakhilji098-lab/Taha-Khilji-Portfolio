@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.vercel/
+
+# Environment files (keep the example)
+.env*
+!.env.example
+
+# Logs
+*.log
+dev-server.log
+
+# AI Studio scaffolding (not part of the site)
+metadata.json
+assets/.aistudio/
+
+# Design references (working files, not part of the site)
+references/
+
+# Caches
+.vite/
+.cache/
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
