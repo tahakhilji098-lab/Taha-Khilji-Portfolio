@@ -1042,15 +1042,16 @@ body,
        Height and width are static on mobile (no compact shrink, no width
        animation). max() keeps the capsule clear of the notch/safe areas
        in landscape, and no motion library writes width/x/scale here. */
-    top: max(10px, env(safe-area-inset-top, 0px));
-    left: max(12px, env(safe-area-inset-left, 0px));
-    right: max(12px, env(safe-area-inset-right, 0px));
-    /* Plain-value fallbacks: browsers without max()/env() support must
-       still get the deterministic 12px insets instead of dropping the
-       whole declaration and falling back to a content-sized capsule. */
+    /* Plain-value fallbacks first: browsers without max()/env() support
+       must still get the deterministic 12px insets instead of dropping
+       the whole declaration and falling back to a content-sized capsule.
+       The max() lines below override them where supported. */
     top: 10px;
     left: 12px;
     right: 12px;
+    top: max(10px, env(safe-area-inset-top, 0px));
+    left: max(12px, env(safe-area-inset-left, 0px));
+    right: max(12px, env(safe-area-inset-right, 0px));
     width: auto;
     max-width: none;
     min-width: 0;
@@ -1094,12 +1095,12 @@ body,
   /* Mobile menu panel — anchored to the same left/right insets as the
      capsule, bounded to the viewport, scrollable when space is short */
   .header-mobile-menu {
-    top: calc(max(10px, env(safe-area-inset-top, 0px)) + 66px);
-    left: max(12px, env(safe-area-inset-left, 0px));
-    right: max(12px, env(safe-area-inset-right, 0px));
     top: 76px;
     left: 12px;
     right: 12px;
+    top: calc(max(10px, env(safe-area-inset-top, 0px)) + 66px);
+    left: max(12px, env(safe-area-inset-left, 0px));
+    right: max(12px, env(safe-area-inset-right, 0px));
     width: auto;
     max-width: none;
     min-width: 0;
