@@ -19,7 +19,9 @@ const COMPACT_AFTER = 72;
 const EXPAND_BELOW = 32;
 
 export const Header: React.FC<HeaderProps> = ({ activeSection }) => {
-  const [isCompact, setIsCompact] = useState(false);
+  const [isCompact, setIsCompact] = useState(
+    () => window.matchMedia('(min-width: 768px)').matches && window.scrollY >= COMPACT_AFTER,
+  );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const compactRef = useRef(false);
   const menuRef = useRef<HTMLElement>(null);
@@ -29,9 +31,11 @@ export const Header: React.FC<HeaderProps> = ({ activeSection }) => {
   useEffect(() => {
     const desktopMq = window.matchMedia('(min-width: 768px)');
 
-    const handleScroll = () => {
+    const syncFromScroll = () => {
       /* Compact shrink is desktop-only — below 768px the capsule must stay
-         a fixed-size bar so its width/height never animate while scrolling. */
+         a fixed-size bar so its width/height never animate while scrolling.
+         Geometry is CSS-controlled on mobile; isCompact only toggles the
+         visual class (background/shadow), never dimensions. */
       if (!desktopMq.matches) {
         if (compactRef.current) {
           compactRef.current = false;
@@ -50,9 +54,23 @@ export const Header: React.FC<HeaderProps> = ({ activeSection }) => {
         setIsCompact(false);
       }
     };
-    handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    const handleViewportChange = () => {
+      if (!desktopMq.matches) {
+        compactRef.current = false;
+        setIsCompact(false);
+      } else {
+        syncFromScroll();
+      }
+    };
+
+    syncFromScroll();
+    window.addEventListener('scroll', syncFromScroll, { passive: true });
+    desktopMq.addEventListener('change', handleViewportChange);
+    return () => {
+      window.removeEventListener('scroll', syncFromScroll);
+      desktopMq.removeEventListener('change', handleViewportChange);
+    };
   }, []);
 
   useEffect(() => {
