@@ -1,8 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { TAHA_INFO } from '../data/portfolioData';
 import { Download } from 'lucide-react';
-import { useReducedMotion, motion, useScroll, useTransform } from 'motion/react';
-import { premiumEase } from '../motion/primitives';
+import { useReducedMotion } from 'motion/react';
 import photoshopIcon from '../assets/icons/tools/photoshop.png';
 import illustratorIcon from '../assets/icons/tools/illustrator.png';
 import figmaIcon from '../assets/icons/tools/figma.png';
@@ -38,13 +37,6 @@ export const About: React.FC = () => {
   const mountedRef = useRef(true);
 
   const reduce = useReducedMotion();
-
-  /* Scroll-linked parallax on portrait */
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ['start end', 'end start'],
-  });
-  const portraitY = useTransform(scrollYProgress, [0, 1], [0, -14]);
 
   /* ─── Progressive enhancement: add motion-ready class after mount ─── */
   useEffect(() => {

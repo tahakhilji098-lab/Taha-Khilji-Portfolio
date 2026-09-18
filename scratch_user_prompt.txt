@@ -1,0 +1,533 @@
+<USER_REQUEST>
+Act as an implementation agent. Inspect the existing React/TypeScript portfolio, edit the appropriate files, test the result, and complete the task. Do not ask me questions, give me a tutorial, or stop after suggesting code.
+
+I have supplied an existing `MagneticCultureCarousel` React/TypeScript component. Use that component as the technical starting point, but convert it into a magnetic carousel for my existing Services section.
+
+IMPORTANT CONTENT RULE
+
+Reference Image 3 is only a reference for:
+
+* Tall vertical card layout
+* Magnetic dock-like cursor movement
+* Neighbouring-card expansion
+* Pill-shaped collapsed cards
+* Click-to-open interaction
+* General premium presentation
+
+Do not use its fashion, gaming, music, car, camera, skating, space, or street-style content.
+
+Remove all eight Unsplash slides from the supplied code. Do not use external Unsplash images.
+
+Use only my six existing service images from:
+
+```text
+public/images/services/
+```
+
+Exact image paths:
+
+```text
+/images/services/service-01-brand-identity-hover.png
+/images/services/service-02-social-media-hover.png
+/images/services/service-03-advertising-hover.png
+/images/services/service-04-packaging-hover.png
+/images/services/service-05-website-ui-hover.png
+/images/services/service-06-print-marketing-hover.png
+```
+
+Do not use images from `/images/work/`. Do not modify or rename the original image files.
+
+SECTION TO REPLACE
+
+Locate the current Services section by searching for these existing strings:
+
+```text
+Brand Identity Design
+Social Media Creatives
+Advertising Design
+Packaging Design
+Website UI Design
+Print & Marketing Materials
+```
+
+The current section has:
+
+* Six horizontal service rows on the left
+* A large service preview image on the right
+* A dark navy background
+* Blue hover/active styling
+
+Replace only the existing service rows and the large right-side preview with the new full-width magnetic service gallery.
+
+Preserve:
+
+* The existing Services section wrapper
+* Its section ID, especially `id="services"`
+* Existing navigation anchor behavior
+* Existing section label/eyebrow and heading
+* Current spacing between website sections
+* The rest of the portfolio exactly as it is
+
+Do not change the hero, work, about, process, testimonial, navigation, contact or footer sections.
+
+SERVICE DATA
+
+Replace `MagneticSlide` with `MagneticService` or extend it by adding an optional `description` property.
+
+Create a stable service array outside the React component using exactly this content:
+
+```tsx
+const SERVICE_SLIDES: MagneticService[] = [
+  {
+    id: "brand-identity-design",
+    image: "/images/services/service-01-brand-identity-hover.png",
+    alt: "Brand identity design presentation",
+    category: "BRAND STRATEGY",
+    title: "Brand Identity\nDesign",
+    description:
+      "Distinctive identity systems that turn strategy into recognition.",
+    objectPosition: "center",
+  },
+  {
+    id: "social-media-creatives",
+    image: "/images/services/service-02-social-media-hover.png",
+    alt: "Social media creative design presentation",
+    category: "SOCIAL CONTENT",
+    title: "Social Media\nCreatives",
+    description:
+      "Platform-ready visuals designed to stop, engage and convert.",
+    objectPosition: "center",
+  },
+  {
+    id: "advertising-design",
+    image: "/images/services/service-03-advertising-hover.png",
+    alt: "Advertising campaign design presentation",
+    category: "CAMPAIGN VISUALS",
+    title: "Advertising\nDesign",
+    description:
+      "Campaign visuals engineered to capture attention and inspire action.",
+    objectPosition: "center",
+  },
+  {
+    id: "packaging-design",
+    image: "/images/services/service-04-packaging-hover.png",
+    alt: "Premium packaging design presentation",
+    category: "PACKAGING",
+    title: "Packaging\nDesign",
+    description:
+      "Shelf-ready packaging that makes product value tangible.",
+    objectPosition: "center",
+  },
+  {
+    id: "website-ui-design",
+    image: "/images/services/service-05-website-ui-hover.png",
+    alt: "Website user interface design presentation",
+    category: "DIGITAL EXPERIENCE",
+    title: "Website UI\nDesign",
+    description:
+      "Responsive digital experiences shaped around clarity and conversion.",
+    objectPosition: "center",
+  },
+  {
+    id: "print-marketing-materials",
+    image: "/images/services/service-06-print-marketing-hover.png",
+    alt: "Print and marketing materials presentation",
+    category: "BRAND COLLATERAL",
+    title: "Print & Marketing\nMaterials",
+    description:
+      "Tactile brand assets designed to leave a lasting impression.",
+    objectPosition: "center",
+  },
+];
+```
+
+Rename the component from:
+
+```text
+MagneticCultureCarousel
+```
+
+to:
+
+```text
+MagneticServicesCarousel
+```
+
+Also rename CSS classes such as:
+
+```text
+magnetic-culture
+```
+
+to:
+
+```text
+magnetic-services
+```
+
+Update accessibility labels from “culture gallery” to “services gallery.”
+
+WEBSITE THEME INTEGRATION
+
+The carousel must match the existing portfolio theme shown in the website:
+
+* Deep navy-black background
+* Electric-blue accent
+* Subtle blue glow
+* Very faint square grid
+* Low-opacity borders
+* Premium cinematic shadows
+* Clean, restrained typography
+* Existing website fonts
+
+Inspect the existing CSS variables, Tailwind configuration, global styles, and typography before styling the component. Reuse the project’s existing font families, accent color, border colors, shadows and background variables.
+
+Do not hard-code `Inter` if the website uses another font.
+
+Do not make the carousel look like a separate black template inserted into the page. Its background must blend seamlessly into the existing Services section.
+
+Use the purple glow from the sample code only as a subtle blue-purple atmospheric glow. The dominant accent must remain the website’s existing electric blue.
+
+Do not add a new white section or change the global page background.
+
+COLLAPSED DESKTOP LAYOUT
+
+Display six service images in one centered horizontal row.
+
+Approximate desktop measurements:
+
+```text
+Collapsed width: 82–90px
+Collapsed height: 350–370px
+Gap: 14–16px
+Maximum magnetic width: 210–225px
+Maximum magnetic height: 425–440px
+Open feature size: approximately 520px
+Open border radius: 26–28px
+```
+
+Use responsive calculations rather than relying on fixed dimensions everywhere.
+
+Collapsed cards must have:
+
+* Tall vertical pill shape
+* Subtle translucent blue-white border
+* Soft shadow
+* Dark bottom gradient
+* Faint diagonal reflection
+* Proper `object-fit: cover`
+* Two-digit number 01–06 at the bottom
+* Clean image cropping
+* No stretched images
+
+The card radius should be close to half the card width while collapsed. Gradually reduce the radius as the card expands. Use approximately `27px` when fully opened.
+
+MAGNETIC BEHAVIOR
+
+Keep and refine the supplied component’s real distance-based magnetic calculation.
+
+This must not become a basic `:hover` effect where only one card changes.
+
+When the pointer moves across the gallery:
+
+* The closest service card becomes the largest
+* Both neighbouring cards also enlarge
+* More distant cards respond with progressively smaller changes
+* The row expands smoothly around the cursor
+* Width and height update continuously
+* All cards return smoothly when the pointer leaves
+
+Calculate influence using original resting card centers:
+
+```ts
+distance = Math.abs(pointerX - originalCenterX);
+normalized = Math.max(0, 1 - distance / influenceRadius);
+factor = smoothStep(normalized);
+```
+
+Do not calculate influence from the current enlarged card positions. Do not measure every enlarged card with `getBoundingClientRect()` on every frame.
+
+The existing implementation correctly calculates original centers from:
+
+* Resting collapsed width
+* Resting gap
+* Strip starting position
+* Original card index
+
+Preserve that approach.
+
+Use `requestAnimationFrame` and interpolation for smooth movement. The animation must have:
+
+* No flickering
+* No feedback movement
+* No snapping
+* No shaking
+* No delayed CSS-only hover feeling
+
+Do not replace the magnetic animation with Framer Motion unless the project already uses it and the same original-position calculation is preserved.
+
+OPEN CARD BEHAVIOR
+
+Clicking a service card must open it as a large square feature card inside the same horizontal composition.
+
+When open:
+
+* Active card becomes approximately `520px × 520px` on desktop
+* Active image stays sharp, bright and fully opaque
+* Inactive cards return to narrow widths
+* Inactive cards become slightly blurred
+* Inactive cards use lower brightness and opacity
+* Add a dark translucent backdrop within the Services carousel
+* Active card stays above the backdrop
+* Add a deep blue-black cinematic shadow
+* Change active card radius to approximately `27px`
+* Hide its 01–06 number
+* Hide the cursor instruction pill
+* Stop magnetic pointer calculations while open
+
+Display inside the open card:
+
+* Small uppercase category
+* Full two-line service title
+* Full service description
+
+The description should appear only when the card is open. Style it as small, readable secondary text below the title with a maximum comfortable width.
+
+The card must close when:
+
+* Active image is clicked again
+* Close icon is clicked
+* Dark backdrop is clicked
+* Escape is pressed
+
+While open:
+
+* Right Arrow opens the next service
+* Left Arrow opens the previous service
+* Navigation wraps between service 01 and service 06
+
+Use a `window` keydown listener while a card is open so Escape and arrow navigation continue working reliably. Remove the listener during cleanup.
+
+TEXT REVEAL
+
+Collapsed state:
+
+* Show only the two-digit number clearly
+* Keep category, title and description hidden
+* Prevent text overflow
+
+Magnetic expansion:
+
+* Gradually fade in the category and title
+* Lift the text upward slightly
+* Base opacity on the magnetic influence/current width
+* Do not show the long description during hover expansion
+
+Open state:
+
+* Show category at full opacity
+* Show complete two-line title
+* Show complete description
+* Keep all text readable using the dark bottom gradient
+
+Category styling:
+
+* Small
+* Uppercase
+* Widely spaced
+* Blue-white
+* Slight transparency
+
+Title styling:
+
+* Use the website’s existing display font
+* Bold or visually strong
+* Tight line-height
+* Subtle negative letter spacing
+* Responsive font size
+
+Description styling:
+
+* Use the website’s body font
+* Approximately 12–14px on desktop
+* Soft blue-grey/white
+* Comfortable line-height
+
+INSTRUCTION PILL
+
+Add a small translucent pill below the carousel that says exactly:
+
+```text
+Move your cursor across the services
+```
+
+Match it to the existing portfolio:
+
+* Dark navy translucent background
+* Thin blue-white border
+* Subtle backdrop blur
+* Small uppercase text
+* Wide letter spacing
+* Electric-blue detail or glow
+
+Hide it when a service is open.
+
+On coarse-pointer/touch devices, either hide it or change the text to:
+
+```text
+Tap a service to explore
+```
+
+RESPONSIVE REQUIREMENTS
+
+The full carousel must remain inside the viewport without creating a horizontal page scrollbar.
+
+Desktop:
+
+* All six cards in one centered row
+* Full magnetic effect
+* Maximum open size approximately 520px
+
+Tablet:
+
+* Proportionally reduce collapsed width, hover width, gap and height
+* Open size approximately `min(70vw, 460px)`
+
+Mobile:
+
+* Keep all six cards in one row
+* Reduce gaps to approximately 4–7px
+* Collapsed cards may become approximately 35–48px wide
+* Height may reduce to approximately 250–290px
+* Disable cursor magnetism on coarse-pointer devices
+* Tapping a card still opens it
+* Active card may use approximately 68–72vw
+* Inactive cards must become narrower while open so the entire row still fits
+* Do not allow the square active card to push the other cards outside the viewport
+
+FIX THE CURRENT OPEN-SIZE CALCULATION
+
+The supplied code calculates open size without fully accounting for the remaining collapsed cards. This can overflow on mobile.
+
+Calculate available open size using the remaining row space. The logic should account for:
+
+```text
+available strip width
+minus widths of all inactive cards
+minus total gaps
+```
+
+Use a separate smaller inactive-card width in open mode when necessary.
+
+Conceptually:
+
+```ts
+const inactiveOpenWidth = isMobile
+  ? Math.max(14, effectiveCollapsedWidth * 0.42)
+  : effectiveCollapsedWidth;
+
+const remainingWidth =
+  (itemCount - 1) * inactiveOpenWidth +
+  (itemCount - 1) * effectiveGap;
+
+const maxOpenWidthFromRow =
+  availableStripWidth - remainingWidth;
+
+const responsiveOpenSize = Math.max(
+  reasonableMinimum,
+  Math.min(
+    openSize,
+    maxOpenWidthFromRow,
+    containerHeightLimit
+  )
+);
+```
+
+Adjust this safely so all six cards stay visible and the page never scrolls horizontally.
+
+Do not solve this by applying global `overflow-x: hidden` to `html` or `body`. Contain layout and overflow inside the Services section.
+
+STRUCTURAL REQUIREMENTS
+
+If the existing Services component already renders a `<section id="services">`, do not insert another nested `<section>`.
+
+In that case, make `MagneticServicesCarousel` return a `<div role="region">` as its root and render it inside the existing Services section.
+
+Keep the current section ID so navbar links continue working.
+
+Remove:
+
+* Old six-row services list
+* Old right-side hover/preview image
+* Any state used only for the old list hover behavior
+* Any unused imports created by removing the old layout
+
+Do not remove the section heading or the entire section wrapper.
+
+PERFORMANCE AND CODE QUALITY
+
+* Use TypeScript types
+* Keep service data outside the component so it has stable identity
+* Keep `ResizeObserver`
+* Preload the six local images
+* Cancel animation frames on unmount
+* Clear timeouts on unmount
+* Remove keyboard listeners on unmount
+* Avoid memory leaks
+* Do not run the animation loop after values settle
+* Do not install a heavy carousel package
+* Do not add unnecessary dependencies
+* Avoid full-page state updates during pointer movement
+* Preserve `prefers-reduced-motion`
+* Preserve semantic buttons and focus-visible states
+* Use the existing electric-blue color for keyboard focus
+* Add useful `aria-label` values
+* Set `aria-expanded` correctly
+* Ensure Enter and Space work through native button behavior
+
+Do not place interactive buttons inside other buttons. The close visual may remain a non-interactive `<span>` inside the active card button because clicking the active card closes it, or restructure the active card safely if a separate functional close button is required.
+
+FINAL VISUAL RESULT
+
+The new section should feel like the magnetic gallery in Reference Image 3, but:
+
+* It contains six cards, not eight
+* It uses my service images
+* It uses my service names
+* It preserves my service descriptions
+* It matches my dark navy and electric-blue portfolio
+* It does not use the sample culture content
+* It does not use Unsplash
+* It replaces only my existing service-list presentation
+
+VALIDATION
+
+After implementation:
+
+1. Run the project’s existing lint command if available.
+2. Run `npm run build`.
+3. Fix all errors and warnings caused by the change.
+4. Verify all six local images load.
+5. Verify the old service rows and preview image are removed.
+6. Verify the Services navigation link still works.
+7. Verify neighbouring cards respond magnetically.
+8. Verify pointer influence uses resting positions.
+9. Verify active card open and close behavior.
+10. Verify Escape, Left Arrow and Right Arrow.
+11. Verify mobile/touch behavior.
+12. Verify there is no horizontal page scrolling.
+13. Verify no other website section was changed.
+
+Do not stop at a plan. Complete the edits and leave the project in a successfully building state.
+
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-08-11T12:33:24+05:00.
+
+The user's current state is as follows:
+Running terminal commands:
+- npm run dev (in d:\new test portfolio\taha-khilji-portfolio -, running for 27m34s)
+</ADDITIONAL_METADATA>
+<USER_SETTINGS_CHANGE>
+The user changed setting `Model Selection` from None to Gemini 3.1 Pro (Low). No need to comment on this change if the user doesn't ask about it. If reporting what model you are, please use a human readable name instead of the exact string.
+</USER_SETTINGS_CHANGE>

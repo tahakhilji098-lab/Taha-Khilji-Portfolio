@@ -26,6 +26,9 @@ const SERVICE_ICONS: Record<string, LucideIcon> = {
   'Advertising & Campaign': Megaphone,
 };
 
+const getInitials = (name: string) =>
+  name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+
 const clientLogos = [
   { name: 'LUMEN', icon: Feather, tracking: '0.3em' },
   { name: 'AURORA', icon: Sparkles, tracking: '0.36em' },
@@ -38,18 +41,18 @@ const clientLogos = [
 const appearanceFor = (nd: number) => {
   if (nd <= 1) {
     return {
-      scale: 1 - 0.04 * nd,
-      opacity: 1 - 0.45 * nd,
-      y: 10 * nd,
-      border: 0.52 - 0.26 * nd,
+      scale: 1 - 0.1 * nd,
+      opacity: 1 - 0.5 * nd,
+      y: 6 * nd,
+      border: 0.42 - 0.24 * nd,
     };
   }
   const t = Math.min(nd - 1, 1);
   return {
-    scale: 0.96 - 0.03 * t,
-    opacity: 0.55 - 0.25 * t,
-    y: 10 + 6 * t,
-    border: 0.26 - 0.12 * t,
+    scale: 0.9 - 0.02 * t,
+    opacity: 0.5 - 0.2 * t,
+    y: 6 + 4 * t,
+    border: 0.18 - 0.08 * t,
   };
 };
 
@@ -201,6 +204,75 @@ export const Testimonials: React.FC = () => {
     [emblaApi],
   );
 
+  /* ── Autoplay: advance every 5s, pause on hover ── */
+  const isHoveringRef = useRef(false);
+  const autoplayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearAutoplay = useCallback(() => {
+    if (autoplayTimerRef.current) {
+      clearTimeout(autoplayTimerRef.current);
+      autoplayTimerRef.current = null;
+    }
+  }, []);
+
+  const startAutoplay = useCallback(() => {
+    clearAutoplay();
+    if (isHoveringRef.current || prefersReducedMotion) return;
+    autoplayTimerRef.current = setTimeout(() => {
+      emblaApi?.scrollNext();
+    }, 5000);
+  }, [emblaApi, clearAutoplay, prefersReducedMotion]);
+
+  /* Restart autoplay progress bars on slide change */
+  const restartProgressBars = useCallback(() => {
+    const indicators = document.querySelectorAll('.testimonials-indicator');
+    indicators.forEach((el) => {
+      const indicator = el as HTMLElement;
+      indicator.classList.remove('is-active');
+      // Force reflow to restart CSS animation
+      void indicator.offsetWidth;
+      if (indicator === document.querySelector('.testimonials-indicator.is-active')) {
+        indicator.classList.add('is-active');
+      }
+    });
+  }, []);
+
+  /* Sync autoplay with Embla events */
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSettle = () => {
+      startAutoplay();
+      // Restart progress bars after a micro-delay so the class toggle works
+      requestAnimationFrame(() => {
+        const indicators = document.querySelectorAll('.testimonials-indicator');
+        indicators.forEach((el) => {
+          el.classList.remove('is-active');
+        });
+        requestAnimationFrame(() => {
+          const active = emblaApi.selectedScrollSnap();
+          indicators[active]?.classList.add('is-active');
+        });
+      });
+    };
+    emblaApi.on('settle', onSettle);
+    return () => { emblaApi.off('settle', onSettle); };
+  }, [emblaApi, startAutoplay]);
+
+  const handleCarouselHover = useCallback((entering: boolean) => {
+    isHoveringRef.current = entering;
+    if (entering) {
+      clearAutoplay();
+    } else {
+      startAutoplay();
+    }
+  }, [clearAutoplay, startAutoplay]);
+
+  /* Start autoplay on init */
+  useEffect(() => {
+    if (ready) startAutoplay();
+    return clearAutoplay;
+  }, [ready, startAutoplay, clearAutoplay]);
+
   /* Entrance sequence (runs once via IntersectionObserver) */
   useEffect(() => {
     const el = sectionRef.current;
@@ -248,18 +320,18 @@ export const Testimonials: React.FC = () => {
 
   const handleCardPointerMove = (e: React.PointerEvent<HTMLElement>) => {
     if (e.pointerType !== 'mouse') return;
-    const el = e.currentTarget;
-    const rect = el.getBoundingClientRect();
+    const inner = e.currentTarget.querySelector('.testimonial-card-inner') as HTMLElement | null;
+    if (!inner) return;
+    const rect = inner.getBoundingClientRect();
     const px = (e.clientX - rect.left) / rect.width;
     const py = (e.clientY - rect.top) / rect.height;
-    el.style.setProperty('--hl-x', `${px * 100}%`);
-    el.style.setProperty('--hl-y', `${py * 100}%`);
-    el.style.setProperty('--tilt', `${((px - 0.5) * 1.2).toFixed(3)}deg`);
+    inner.style.setProperty('--spotlight-x', `${px * 100}%`);
+    inner.style.setProperty('--spotlight-y', `${py * 100}%`);
+    e.currentTarget.style.setProperty('--tilt', `${((px - 0.5) * 1.2).toFixed(3)}deg`);
   };
 
   const handleCardPointerLeave = (e: React.PointerEvent<HTMLElement>) => {
-    const el = e.currentTarget;
-    el.style.setProperty('--tilt', '0deg');
+    e.currentTarget.style.setProperty('--tilt', '0deg');
   };
 
   const slideStateClasses = (i: number): string => {
@@ -307,6 +379,8 @@ export const Testimonials: React.FC = () => {
         role="region"
         aria-roledescription="carousel"
         aria-label="Client testimonials"
+        onMouseEnter={() => handleCarouselHover(true)}
+        onMouseLeave={() => handleCarouselHover(false)}
         onKeyDown={(e) => {
           if (e.key === 'ArrowLeft') {
             e.preventDefault();
@@ -347,32 +421,54 @@ export const Testimonials: React.FC = () => {
                     onPointerMove={isActive ? handleCardPointerMove : undefined}
                     onPointerLeave={isActive ? handleCardPointerLeave : undefined}
                   >
-                    <span className="sr-only">
-                      Testimonial {index + 1} of {total}
-                    </span>
-                    <div className="testimonial-quote-wrap">
-                      <blockquote className="testimonial-quote">
-                        {testimonial.excerpt ?? testimonial.quote}
-                      </blockquote>
-                    </div>
-                    <div className="testimonial-divider" aria-hidden="true" />
-                    <footer className="testimonial-meta">
-                      <div className="testimonial-author">
-                        <span className="testimonial-author-name">{testimonial.authorName}</span>
-                        <span className="testimonial-author-role">
-                          {testimonial.authorRole}, {testimonial.companyName}
-                        </span>
+                    <div className="testimonial-card-inner">
+                      <span className="sr-only">
+                        Testimonial {index + 1} of {total}
+                      </span>
+                      <div className="testimonial-quote-wrap">
+                        <blockquote className="testimonial-quote">
+                          {testimonial.excerpt ?? testimonial.quote}
+                        </blockquote>
                       </div>
-                      <div className="testimonial-meta-right">
-                        <span className="testimonial-meta-rule" aria-hidden="true" />
-                        <div className="testimonial-service">
-                          <span className="testimonial-service-icon">
-                            <ServiceIcon aria-hidden="true" />
+                      <div className="testimonial-divider" aria-hidden="true" />
+                      <footer className="testimonial-meta">
+                        <div className="testimonial-author">
+                          {testimonial.avatarUrl ? (
+                            <img
+                              className="testimonial-avatar"
+                              src={testimonial.avatarUrl}
+                              alt=""
+                              width="36"
+                              height="36"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : (
+                            <span className="testimonial-avatar-fallback" aria-hidden="true">
+                              {getInitials(testimonial.authorName)}
+                            </span>
+                          )}
+                          <div className="testimonial-author-info">
+                            <span className="testimonial-author-name">{testimonial.authorName}</span>
+                            <span className="testimonial-author-role">
+                              {testimonial.authorRole}
+                            </span>
+                          </div>
+                          <span className="testimonial-company-logo" aria-hidden="true">
+                            {testimonial.companyName}
                           </span>
-                          <span>{testimonial.projectTag}</span>
                         </div>
-                      </div>
-                    </footer>
+                        <div className="testimonial-meta-right">
+                          <span className="testimonial-meta-rule" aria-hidden="true" />
+                          <div className="testimonial-service">
+                            <span className="testimonial-service-icon">
+                              <ServiceIcon aria-hidden="true" />
+                            </span>
+                            <span>{testimonial.projectTag}</span>
+                          </div>
+                        </div>
+                      </footer>
+                    </div>
                   </div>
                 </article>
               );

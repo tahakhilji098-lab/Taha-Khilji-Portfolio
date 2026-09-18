@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useCallback } from 'react';
-import { motion } from 'motion/react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Project } from '../types';
 import { X, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GMAIL_COMPOSE_URL } from '../data/gmailCompose';
@@ -9,60 +9,31 @@ import { GMAIL_COMPOSE_URL } from '../data/gmailCompose';
 interface CaseStudyModalProps {
   project: Project | null;
   allProjects: Project[];
+  originRect: DOMRect | null;
   onClose: () => void;
   onSelectProject: (project: Project) => void;
   onContactClick: () => void;
 }
 
-/* ─── Sub-components ─── */
-
-const MetadataItem: React.FC<{
-  label: string;
-  value?: string;
-  values?: string[];
-}> = ({ label, value, values }) => (
-  <div>
-    <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#5BB8FF] font-semibold">
-      {label}
-    </span>
-    {values ? (
-      <ul className="mt-2 space-y-1">
-        {values.map((v, i) => (
-          <li key={i} className="text-sm text-[#F7F9FF]">
-            {v}
-          </li>
-        ))}
-      </ul>
-    ) : (
-      <p className="text-sm font-medium text-[#F7F9FF] mt-2">{value}</p>
-    )}
-  </div>
-);
-
-const DetailSection: React.FC<{ title: string; content: string }> = ({
-  title,
-  content,
-}) => (
-  <div className="pt-8 grid grid-cols-1 lg:grid-cols-[180px_1fr] gap-4 lg:gap-10">
-    <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#5BB8FF] font-semibold pt-1">
-      {title}
-    </span>
-    <p className="text-sm lg:text-base text-[#8A95B0] leading-relaxed">
-      {content}
-    </p>
-  </div>
-);
+/* ─── Easing ─── */
+const ease = [0.16, 1, 0.3, 1];
+const easeContent = [0.22, 1, 0.36, 1];
 
 /* ─── Main Modal ─── */
 
 export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
   project,
   allProjects,
+  originRect,
   onClose,
   onSelectProject,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const reduce = useReducedMotion();
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   if (!project) return null;
 
@@ -70,84 +41,111 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
   const prevProject = allProjects[(currentIndex - 1 + allProjects.length) % allProjects.length];
   const nextProject = allProjects[(currentIndex + 1) % allProjects.length];
 
+  /* ─── Compute FLIP transform from origin rect ─── */
+  const getInitialTransform = () => {
+    if (!originRect) return { opacity: 0, y: 20, scale: 0.92 };
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const modalW = Math.min(1100, vw - 48);
+    const modalH = vh - 56;
+    const targetX = (vw - modalW) / 2;
+    const targetY = (vh - modalH) / 2;
+    const scaleX = originRect.width / modalW;
+    const scaleY = originRect.height / modalH;
+    const translateX = originRect.left + originRect.width / 2 - (targetX + modalW / 2);
+    const translateY = originRect.top + originRect.height / 2 - (targetY + modalH / 2);
+    return {
+      opacity: 0,
+      x: translateX,
+      y: translateY,
+      scale: Math.min(scaleX, scaleY),
+    };
+  };
+
+  const getExitTransform = () => {
+    if (!originRect) return { opacity: 0, y: 20, scale: 0.92 };
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const modalW = Math.min(1100, vw - 48);
+    const modalH = vh - 56;
+    const targetX = (vw - modalW) / 2;
+    const targetY = (vh - modalH) / 2;
+    const scaleX = originRect.width / modalW;
+    const scaleY = originRect.height / modalH;
+    const translateX = originRect.left + originRect.width / 2 - (targetX + modalW / 2);
+    const translateY = originRect.top + originRect.height / 2 - (targetY + modalH / 2);
+    return {
+      opacity: 0,
+      x: translateX,
+      y: translateY,
+      scale: Math.min(scaleX, scaleY),
+    };
+  };
+
   /* ─── Body Scroll Lock ─── */
   useEffect(() => {
     previousFocusRef.current = document.activeElement as HTMLElement;
-
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
     const originalPadding = document.body.style.paddingRight;
     const originalOverflow = document.body.style.overflow;
-
     document.body.style.overflow = 'hidden';
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
-
     return () => {
       document.body.style.overflow = originalOverflow;
       document.body.style.paddingRight = originalPadding;
     };
   }, []);
 
-  /* ─── Focus management on mount ─── */
+  /* ─── Focus management ─── */
   useEffect(() => {
-    requestAnimationFrame(() => {
-      modalRef.current?.focus();
-    });
+    requestAnimationFrame(() => modalRef.current?.focus());
   }, []);
 
-  /* ─── Close & restore focus ─── */
   const handleClose = useCallback(() => {
     onClose();
-    requestAnimationFrame(() => {
-      previousFocusRef.current?.focus();
-    });
+    requestAnimationFrame(() => previousFocusRef.current?.focus());
   }, [onClose]);
 
-  /* ─── Keyboard handler (Escape + focus trap) ─── */
+  /* ─── Keyboard: Escape + arrows + focus trap ─── */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        handleClose();
-        return;
-      }
-
+      if (e.key === 'Escape') { handleClose(); return; }
+      if (e.key === 'ArrowLeft') { onSelectProject(prevProject); return; }
+      if (e.key === 'ArrowRight') { onSelectProject(nextProject); return; }
       if (e.key === 'Tab') {
         const focusable = modalRef.current?.querySelectorAll<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
         if (!focusable || focusable.length === 0) return;
-
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
-
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault();
-            last.focus();
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-          }
-        }
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleClose]);
+  }, [handleClose, onSelectProject, prevProject, nextProject]);
 
   /* ─── Backdrop click ─── */
   const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      handleClose();
-    }
+    if (e.target === e.currentTarget) handleClose();
   };
 
-  /* ─── Transition easing ─── */
-  const ease = [0.22, 1, 0.36, 1];
+  /* ─── Hero parallax on mouse move ─── */
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (reduce) return;
+    const rect = heroRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 8;
+    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 5;
+    setMousePos({ x, y });
+  };
+
+  /* ─── Stagger delays ─── */
+  const stagger = (i: number) => ({ transition: { delay: 0.35 + i * 0.07 } });
 
   return (
     <motion.div
@@ -156,7 +154,7 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3, ease }}
+      transition={{ duration: 0.3, ease: easeContent }}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -168,13 +166,12 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
         tabIndex={-1}
         className="case-study-window"
         onClick={(e) => e.stopPropagation()}
-        initial={{ opacity: 0, y: 12, scale: 0.985 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 12, scale: 0.985 }}
-        transition={{ duration: 0.38, ease, delay: 0.05 }}
+        initial={reduce ? { opacity: 0, y: 20, scale: 0.92 } : getInitialTransform()}
+        animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+        exit={reduce ? { opacity: 0, y: 20, scale: 0.92 } : getExitTransform()}
+        transition={{ duration: 0.5, ease }}
       >
-        {/* Close button — always visible above scroll content, outside the
-            scroll container so it never scrolls out of view */}
+        {/* Close button */}
         <button
           type="button"
           onClick={handleClose}
@@ -185,111 +182,168 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
         </button>
 
         {/* Scrollable Content */}
-        <div className="case-study-scroll" data-lenis-prevent>
+        <div ref={scrollRef} className="case-study-scroll" data-lenis-prevent>
           {/* ─── Hero Image ─── */}
-          <div className="relative w-full h-[clamp(320px,48vh,600px)] overflow-hidden">
-            <div className="absolute inset-0">
+          <div
+            ref={heroRef}
+            className="case-study-hero"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={() => setMousePos({ x: 0, y: 0 })}
+          >
+            <motion.div
+              className="case-study-hero-img"
+              animate={reduce ? {} : {
+                x: mousePos.x,
+                y: mousePos.y,
+                scale: 1.05,
+              }}
+              transition={{ scale: { duration: 20, ease: 'linear' }, x: { duration: 0.3 }, y: { duration: 0.3 } }}
+            >
               <img
                 src={project.thumbnail}
                 alt={project.title}
-                className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
-            </div>
-
-            {/* Bottom gradient blend */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0A142A] pointer-events-none" />
+            </motion.div>
+            <div className="case-study-hero-gradient" />
           </div>
 
           {/* ─── Content Area ─── */}
-          <div className="px-6 md:px-10 lg:px-14 pb-8 md:pb-10 lg:pb-14 pt-8 md:pt-10 lg:pt-12 space-y-10 md:space-y-12">
+          <div className="case-study-content">
             {/* Intro: Two-column layout */}
-            <motion.div
-              className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14"
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 18 }}
-              transition={{ duration: 0.5, ease, delay: 0.18 }}
-            >
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 lg:gap-14">
               {/* Left column */}
-              <div className="space-y-5 max-w-[620px]">
-                <div>
-                  <span className="text-[11px] font-mono uppercase tracking-[0.16em] text-[#5BB8FF] font-semibold block">
+              <div className="space-y-5">
+                <motion.div {...stagger(0)} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: easeContent, delay: 0.35 }}>
+                  <span className="case-study-eyebrow">
+                    <span className="case-study-eyebrow-dot" />
                     {project.category}
                   </span>
-                  <h2
-                    id="case-study-title"
-                    className="text-[clamp(36px,4.8vw,72px)] font-serif text-[#F7F9FF] leading-[0.95] tracking-tight mt-3"
-                  >
-                    {project.title}
-                  </h2>
-                </div>
-                <p className="text-base lg:text-lg text-[#8A95B0] leading-[1.7] font-light">
+                </motion.div>
+                <motion.h2
+                  id="case-study-title"
+                  className="case-study-title"
+                  {...stagger(1)}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, ease: easeContent, delay: 0.42 }}
+                >
+                  {project.title}
+                </motion.h2>
+                <motion.p
+                  className="case-study-desc"
+                  {...stagger(2)}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, ease: easeContent, delay: 0.49 }}
+                >
                   {project.subtitle}
-                </p>
+                </motion.p>
                 {project.services && project.services.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-1">
+                  <motion.div
+                    className="flex flex-wrap gap-2 pt-1"
+                    {...stagger(3)}
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.45, ease: easeContent, delay: 0.56 }}
+                  >
                     {project.services.map((s, i) => (
-                      <span
-                        key={i}
-                        className="px-3 py-1 text-[10px] font-mono uppercase tracking-wider text-[#5BB8FF] bg-[#267DFF]/10 border border-[#267DFF]/20 rounded-full"
-                      >
-                        {s}
-                      </span>
+                      <span key={i} className="case-study-tag">{s}</span>
                     ))}
-                  </div>
+                  </motion.div>
                 )}
               </div>
 
-              {/* Right column */}
-              <div className="space-y-5">
-                <MetadataItem label="Year" value={project.year} />
-                {project.role && <MetadataItem label="Role" value={project.role} />}
-                <MetadataItem label="Deliverables" values={project.deliverables} />
-              </div>
-            </motion.div>
+              {/* Right column — meta with corner brackets */}
+              <motion.div
+                className="space-y-6"
+                {...stagger(4)}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: easeContent, delay: 0.63 }}
+              >
+                <div className="case-study-meta-group">
+                  <div className="case-study-meta-bracket" />
+                  <span className="case-study-meta-label">Year</span>
+                  <p className="case-study-meta-value">{project.year}</p>
+                </div>
+                {project.role && (
+                  <div className="case-study-meta-group">
+                    <div className="case-study-meta-bracket" />
+                    <span className="case-study-meta-label">Role</span>
+                    <p className="case-study-meta-value">{project.role}</p>
+                  </div>
+                )}
+                {project.deliverables && (
+                  <div className="case-study-meta-group">
+                    <div className="case-study-meta-bracket" />
+                    <span className="case-study-meta-label">Deliverables</span>
+                    <ul className="mt-2 space-y-1">
+                      {project.deliverables.map((v, i) => (
+                        <li key={i} className="case-study-meta-value">{v}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </motion.div>
+            </div>
 
             {/* ─── Detail Sections ─── */}
             <motion.div
-              className="space-y-0 divide-y divide-[rgba(130,160,220,0.12)]"
+              className="space-y-0"
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 18 }}
-              transition={{ duration: 0.5, ease, delay: 0.26 }}
+              transition={{ duration: 0.5, ease: easeContent, delay: 0.7 }}
             >
               {project.challenge && (
-                <DetailSection title="The Challenge" content={project.challenge} />
+                <div className="case-study-detail-row">
+                  <div className="case-study-detail-label">
+                    <div className="case-study-detail-accent" />
+                    <span>The Challenge</span>
+                  </div>
+                  <p className="case-study-detail-text">{project.challenge}</p>
+                </div>
               )}
               {project.solution && (
-                <DetailSection title="The Approach" content={project.solution} />
+                <div className="case-study-detail-row">
+                  <div className="case-study-detail-label">
+                    <div className="case-study-detail-accent" />
+                    <span>The Approach</span>
+                  </div>
+                  <p className="case-study-detail-text">{project.solution}</p>
+                </div>
               )}
               {project.outcome && (
-                <DetailSection title="The Outcome" content={project.outcome} />
+                <div className="case-study-detail-row">
+                  <div className="case-study-detail-label">
+                    <div className="case-study-detail-accent" />
+                    <span>The Outcome</span>
+                  </div>
+                  <p className="case-study-detail-text">{project.outcome}</p>
+                </div>
               )}
             </motion.div>
 
             {/* ─── Footer Navigation ─── */}
             <motion.div
-              className="pt-6 border-t border-[rgba(130,160,220,0.12)] flex flex-col md:flex-row items-center justify-between gap-5"
+              className="case-study-footer"
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 18 }}
-              transition={{ duration: 0.5, ease, delay: 0.34 }}
+              transition={{ duration: 0.5, ease: easeContent, delay: 0.78 }}
             >
               {/* Previous */}
               <button
                 onClick={() => onSelectProject(prevProject)}
-                className="group flex items-center gap-3 text-left w-full md:w-auto p-3.5 rounded-xl bg-[#050816] border border-[rgba(130,160,220,0.1)] hover:border-[#267DFF]/40 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#267DFF]"
+                className="case-study-nav-btn group"
                 aria-label={`Previous project: ${prevProject.title}`}
               >
-                <div className="w-10 h-10 rounded-full bg-[#0A1228] border border-[rgba(130,160,220,0.1)] flex items-center justify-center text-[#9EA8BD] group-hover:text-[#5BB8FF] shrink-0 transition-colors">
-                  <ChevronLeft className="w-5 h-5" />
+                <div className="case-study-nav-thumb">
+                  <img src={prevProject.thumbnail} alt="" referrerPolicy="no-referrer" />
                 </div>
+                <ChevronLeft className="w-4 h-4 text-[#7B87A3] group-hover:text-[#5BB8FF] transition-colors shrink-0" />
                 <div className="min-w-0">
-                  <div className="text-[10px] font-mono text-[#7B87A3] uppercase tracking-wider">Previous</div>
-                  <div className="text-sm font-semibold text-[#F7F9FF] group-hover:text-[#5BB8FF] transition-colors truncate">
-                    {prevProject.title}
-                  </div>
+                  <div className="case-study-nav-label">Previous</div>
+                  <div className="case-study-nav-title">{prevProject.title}</div>
                 </div>
               </button>
 
@@ -298,27 +352,26 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
                 href={GMAIL_COMPOSE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-bold rounded-xl bg-[#267DFF] text-white hover:bg-[#5BB8FF] hover:text-[#050816] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-[0_0_20px_rgba(38,125,255,0.4)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#267DFF] w-full md:w-auto"
+                className="case-study-cta group"
                 aria-label="Start a project like this with Taha Khilji using Gmail"
               >
                 <span>Start a Project</span>
-                <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+                <ArrowUpRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[3px] group-hover:-translate-y-[3px]" aria-hidden="true" />
               </a>
 
               {/* Next */}
               <button
                 onClick={() => onSelectProject(nextProject)}
-                className="group flex items-center justify-end gap-3 text-right w-full md:w-auto p-3.5 rounded-xl bg-[#050816] border border-[rgba(130,160,220,0.1)] hover:border-[#267DFF]/40 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#267DFF]"
+                className="case-study-nav-btn case-study-nav-btn--right group"
                 aria-label={`Next project: ${nextProject.title}`}
               >
-                <div className="min-w-0">
-                  <div className="text-[10px] font-mono text-[#7B87A3] uppercase tracking-wider">Next</div>
-                  <div className="text-sm font-semibold text-[#F7F9FF] group-hover:text-[#5BB8FF] transition-colors truncate">
-                    {nextProject.title}
-                  </div>
+                <div className="min-w-0 text-right">
+                  <div className="case-study-nav-label">Next</div>
+                  <div className="case-study-nav-title">{nextProject.title}</div>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-[#0A1228] border border-[rgba(130,160,220,0.1)] flex items-center justify-center text-[#9EA8BD] group-hover:text-[#5BB8FF] shrink-0 transition-colors">
-                  <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-4 h-4 text-[#7B87A3] group-hover:text-[#5BB8FF] transition-colors shrink-0" />
+                <div className="case-study-nav-thumb">
+                  <img src={nextProject.thumbnail} alt="" referrerPolicy="no-referrer" />
                 </div>
               </button>
             </motion.div>
