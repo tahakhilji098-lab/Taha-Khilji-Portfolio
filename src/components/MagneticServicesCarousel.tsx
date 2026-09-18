@@ -526,8 +526,6 @@ export const MagneticServicesCarousel: React.FC = () => {
                 ref={(el) => { cardRefs.current[index] = el; }}
                 className={`magnetic-services__card ${isSource ? 'is-source' : ''} ${isSource && sourceVisible ? 'is-returning' : ''} ${isInactive ? 'is-inactive' : ''}`}
                 data-title-size={service.titleSize || 'default'}
-                onClick={() => openWindow(index)}
-                aria-expanded={isSource}
                 aria-label={service.title.replace(/\n/g, ' ')}
                 tabIndex={windowOpen ? -1 : 0}
                 style={{
@@ -579,7 +577,7 @@ export const MagneticServicesCarousel: React.FC = () => {
       )}
       {isCoarse && !windowOpen && (
         <div className="magnetic-services__hint">
-          Tap a service to explore
+          Move your cursor across the services
         </div>
       )}
 

@@ -93,7 +93,7 @@
     0 24px 55px rgba(0, 0, 0, 0.42),
     0 0 25px rgba(38, 125, 255, 0.035),
     inset 0 0 0 1px rgba(255, 255, 255, 0.025);
-cursor: pointer;
+cursor: default;
   transform: translateZ(0);
   transition: filter 0.4s var(--ease-premium), opacity 0.4s var(--ease-premium), box-shadow 0.4s var(--ease-premium);
   will-change: width, height, border-radius;

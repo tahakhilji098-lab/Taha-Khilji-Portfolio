@@ -2385,7 +2385,7 @@ body,
   border-radius: 999px;
   background: #060e22;
   overflow: hidden;
-  cursor: pointer;
+  cursor: default;
   padding: 0;
   font-family: var(--font-sans);
   text-align: left;

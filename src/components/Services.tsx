@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { SERVICES } from '../data/portfolioData';
 import { ArrowUpRight } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
@@ -65,7 +65,6 @@ export const Services: React.FC = () => {
   const pointerActive = useRef(false);
   const stageWidth = useRef(0);
   const isTouch = useRef(false);
-  const [activeTouch, setActiveTouch] = useState<number | null>(null);
   const activeIndexRef = useRef<number | null>(null);
 
   const reduce = useReducedMotion();
@@ -268,7 +267,6 @@ export const Services: React.FC = () => {
           const label = content.querySelector('.pill-label') as HTMLElement;
           const title = content.querySelector('.pill-title') as HTMLElement;
           const desc = content.querySelector('.pill-desc') as HTMLElement;
-          const arrow = content.querySelector('.pill-arrow') as HTMLElement;
 
           if (label) {
             const labelOp = showContent ? Math.min(1, Math.max(0, (progress - 0.58) / 0.14)) : 0;
@@ -287,10 +285,6 @@ export const Services: React.FC = () => {
             desc.style.opacity = String(descOp);
             desc.style.transform = `translateY(${(1 - descOp) * 8}px)`;
           }
-          if (arrow) {
-            const arrowOp = showContent ? Math.min(1, Math.max(0, (progress - 0.58 - 0.07) / 0.14)) : 0;
-            arrow.style.opacity = String(arrowOp);
-          }
         }
       }
 
@@ -302,21 +296,6 @@ export const Services: React.FC = () => {
   }, [reduce, getLayout]);
 
   /* ─── Touch: tap to expand ─── */
-  const handleTouchTap = useCallback((index: number) => {
-    if (!isTouch.current) return;
-    setActiveTouch((prev) => prev === index ? null : index);
-  }, []);
-
-  /* ─── Scroll to contact ─── */
-  const scrollToContact = (serviceTitle: string) => {
-    const el = document.querySelector('#contact');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-      const select = document.querySelector('select[name="serviceNeeded"]') as HTMLSelectElement;
-      if (select) select.value = serviceTitle;
-    }
-  };
-
   const { stageH } = getLayout();
 
   return (
@@ -368,22 +347,14 @@ export const Services: React.FC = () => {
 
           <div className="magnetic-row">
             {SERVICES.map((service, i) => {
-              const isActive = activeTouch === i;
               return (
                 <button
                   key={service.id}
                   ref={(el) => { pillRefs.current[i] = el; }}
-                  className={`magnetic-pill ${isActive ? 'is-active' : ''}`}
+                  className="magnetic-pill"
                   style={{
-                    width: isTouch.current ? (isActive ? `min(78vw, ${MOB_MAX_W}px)` : MOB_BASE_W) : DESK_BASE_W,
-                    height: isTouch.current ? (isActive ? MOB_MAX_H : MOB_BASE_H) : DESK_BASE_H,
-                  }}
-                  onClick={() => {
-                    if (isTouch.current) {
-                      handleTouchTap(i);
-                    } else {
-                      scrollToContact(service.title);
-                    }
+                    width: isTouch.current ? MOB_BASE_W : DESK_BASE_W,
+                    height: isTouch.current ? MOB_BASE_H : DESK_BASE_H,
                   }}
                   onFocus={() => {
                     if (!isTouch.current) {
@@ -429,7 +400,6 @@ export const Services: React.FC = () => {
                     <span className="pill-label">SERVICE {service.number}</span>
                     <h3 className="pill-title">{service.title}</h3>
                     <p className="pill-desc">{service.description || service.shortDesc}</p>
-                    <ArrowUpRight className="pill-arrow" aria-hidden="true" />
                   </div>
                 </button>
               );
